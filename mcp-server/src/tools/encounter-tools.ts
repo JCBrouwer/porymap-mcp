@@ -8,7 +8,7 @@ import {
   getEncounterFieldDefs,
   getFieldEncounters,
   setFieldEncounters,
-  findMapsWithSpecies,
+  removeFieldEncounters,
 } from "../data/wild-encounters.js";
 import type { WildEncounterMon } from "../types.js";
 
@@ -115,6 +115,44 @@ export function registerEncounterTools(server: McpServer): void {
                 null,
                 2,
               ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${(e as Error).message}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "remove_wild_encounters",
+    "Remove encounter data for a specific field type from a map. If the map has no remaining encounter fields after removal, the entire map entry is deleted.",
+    {
+      map: z.string().describe("Map name"),
+      field_type: z.string().describe("Encounter field type to remove (e.g. 'land', 'water')"),
+    },
+    async ({ map, field_type }) => {
+      try {
+        const project = getProject();
+        const filepath = project.resolve(project.paths.json_wild_encounters);
+        if (!project.readWildEncounters()) {
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({ error: "No wild encounters file found" }, null, 2) }],
+          };
+        }
+        const data = readWildEncounters(filepath);
+        const mapJson = project.readMapJson(map);
+        const mapConstant = mapJson.id;
+        const removed = removeFieldEncounters(data, mapConstant, field_type);
+        if (removed) writeWildEncounters(filepath, data);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ success: true, map, map_constant: mapConstant, field_type, removed }, null, 2),
             },
           ],
         };

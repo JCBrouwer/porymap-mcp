@@ -67,6 +67,7 @@ export class ProjectContext {
   private constantsCache: Map<ConstantType, string[]> = new Map();
   private tilesetCache: TilesetInfo[] | null = null;
   private metatileLabelCache: MetatileLabel[] | null = null;
+  private mapConstantCache: Map<string, string> | null = null;
 
   constructor(projectRoot: string) {
     this.root = path.resolve(projectRoot);
@@ -121,21 +122,28 @@ export class ProjectContext {
 
   // Resolve a map name from either the name or constant
   resolveMapName(mapNameOrConstant: string): string {
-    // If it looks like a map name (not a constant), use it directly
+    // If it doesn't look like a constant, use it directly as a map name
     if (!mapNameOrConstant.startsWith("MAP_")) {
       return mapNameOrConstant;
     }
-    // Look up constant in map list
-    const maps = this.getMapList();
-    // Try to find the map by generating a matching name
-    // MAP_PETALBURG_CITY -> search for the map whose generated constant matches
-    for (const map of maps) {
-      const mapJson = this.readMapJson(map.name);
-      if (mapJson.id === mapNameOrConstant) {
-        return map.name;
+    // Build and cache the constant→name lookup on first use
+    if (!this.mapConstantCache) {
+      const cache = new Map<string, string>();
+      for (const map of this.getMapList()) {
+        try {
+          const mapJson = this.readMapJson(map.name);
+          if (mapJson.id) cache.set(mapJson.id, map.name);
+        } catch {
+          // Skip unreadable maps
+        }
       }
+      this.mapConstantCache = cache;
     }
-    throw new McpError("MAP_NOT_FOUND", `No map found with constant '${mapNameOrConstant}'`);
+    const name = this.mapConstantCache.get(mapNameOrConstant);
+    if (!name) {
+      throw new McpError("MAP_NOT_FOUND", `No map found with constant '${mapNameOrConstant}'`);
+    }
+    return name;
   }
 
   // Get layout for a map
@@ -162,6 +170,7 @@ export class ProjectContext {
     this.constantsCache.clear();
     this.tilesetCache = null;
     this.metatileLabelCache = null;
+    this.mapConstantCache = null;
   }
 
   // --- Tilesets ---

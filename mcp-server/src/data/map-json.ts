@@ -34,21 +34,8 @@ export function updateMapHeader(
   data: MapJson,
   updates: Record<string, unknown>,
 ): void {
-  const headerFields = [
-    "music",
-    "region_map_section",
-    "requires_flash",
-    "weather",
-    "map_type",
-    "show_map_name",
-    "battle_scene",
-    "allow_cycling",
-    "allow_escaping",
-    "allow_running",
-    "floor_number",
-  ];
   for (const [key, value] of Object.entries(updates)) {
-    if (headerFields.includes(key) && value !== undefined) {
+    if (value !== undefined) {
       (data as Record<string, unknown>)[key] = value;
     }
   }
@@ -271,7 +258,7 @@ export function createDefaultMapJson(
     floorNumber?: number;
   } = {},
 ): MapJson {
-  return {
+  const mapJson: MapJson = {
     id: mapId,
     name: mapName,
     layout: layoutId,
@@ -288,4 +275,9 @@ export function createDefaultMapJson(
     coord_events: [],
     bg_events: [],
   };
+  if (options.allowRunning !== undefined) mapJson.allow_running = options.allowRunning;
+  if (options.allowBiking !== undefined) mapJson.allow_cycling = options.allowBiking;
+  if (options.allowEscaping !== undefined) mapJson.allow_escaping = options.allowEscaping;
+  if (options.floorNumber !== undefined) mapJson.floor_number = options.floorNumber;
+  return mapJson;
 }

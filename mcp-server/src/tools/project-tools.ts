@@ -14,6 +14,11 @@ export function getProject(): ProjectContext {
   return currentProject;
 }
 
+/** For testing only: inject a ProjectContext without going through open_project. */
+export function setProject(project: ProjectContext | null): void {
+  currentProject = project;
+}
+
 export function registerProjectTools(server: McpServer): void {
   server.tool(
     "open_project",

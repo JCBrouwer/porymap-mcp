@@ -49,27 +49,35 @@ export function registerMapReadTools(server: McpServer): void {
         const rw = width ?? layout.width;
         const rh = height ?? layout.height;
 
+        // Clip region to map bounds and report actual region
+        const actualX = Math.max(0, rx);
+        const actualY = Math.max(0, ry);
+        const actualW = Math.min(rw, layout.width - actualX);
+        const actualH = Math.min(rh, layout.height - actualY);
+
         const blocks =
-          rx === 0 && ry === 0 && rw === layout.width && rh === layout.height
+          actualX === 0 && actualY === 0 && actualW === layout.width && actualH === layout.height
             ? readMapBlocks(project.root, layout)
-            : readMapBlockRegion(project.root, layout, rx, ry, rw, rh);
+            : readMapBlockRegion(project.root, layout, actualX, actualY, actualW, actualH);
+
+        const responseData: Record<string, unknown> = {
+          map_width: layout.width,
+          map_height: layout.height,
+          primary_tileset: layout.primary_tileset,
+          secondary_tileset: layout.secondary_tileset,
+          region: { x: actualX, y: actualY, width: actualW, height: actualH },
+          blocks,
+        };
+        if (actualX !== rx || actualY !== ry || actualW !== rw || actualH !== rh) {
+          responseData.clipped = true;
+          responseData.requested_region = { x: rx, y: ry, width: rw, height: rh };
+        }
 
         return {
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify(
-                {
-                  map_width: layout.width,
-                  map_height: layout.height,
-                  primary_tileset: layout.primary_tileset,
-                  secondary_tileset: layout.secondary_tileset,
-                  region: { x: rx, y: ry, width: rw, height: rh },
-                  blocks,
-                },
-                null,
-                2,
-              ),
+              text: JSON.stringify(responseData, null, 2),
             },
           ],
         };

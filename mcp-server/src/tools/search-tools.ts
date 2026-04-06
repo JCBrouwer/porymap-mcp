@@ -65,6 +65,7 @@ export function registerSearchTools(server: McpServer): void {
           index: number;
           event: unknown;
         }> = [];
+        const skippedMaps: string[] = [];
 
         for (const mapEntry of maps) {
           if (results.length >= maxResults) break;
@@ -73,6 +74,7 @@ export function registerSearchTools(server: McpServer): void {
           try {
             mapData = project.readMapJson(mapEntry.name);
           } catch {
+            skippedMaps.push(mapEntry.name);
             continue;
           }
 
@@ -129,11 +131,13 @@ export function registerSearchTools(server: McpServer): void {
           }
         }
 
+        const response: Record<string, unknown> = { count: results.length, results };
+        if (skippedMaps.length > 0) response.skipped_maps = skippedMaps;
         return {
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify({ count: results.length, results }, null, 2),
+              text: JSON.stringify(response, null, 2),
             },
           ],
         };

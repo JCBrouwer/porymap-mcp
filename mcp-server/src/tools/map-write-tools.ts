@@ -371,6 +371,9 @@ export function registerMapWriteTools(server: McpServer): void {
           mapType: params.map_type,
           battleScene: params.battle_scene,
           showMapName: params.show_map_name,
+          allowRunning: params.allow_running,
+          allowBiking: params.allow_biking,
+          allowEscaping: params.allow_escaping,
         });
         writeJsonFile(project.resolve(path.join(mapFolder, "map.json")), mapJson);
 

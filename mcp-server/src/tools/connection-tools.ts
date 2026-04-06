@@ -40,6 +40,8 @@ export function registerConnectionTools(server: McpServer): void {
 
         // Mirror connection
         const shouldMirror = mirror ?? true;
+        let mirrored = false;
+        let mirrorWarning: string | undefined;
         if (shouldMirror) {
           const revDir = reverseDirection(direction);
           if (revDir) {
@@ -55,21 +57,20 @@ export function registerConnectionTools(server: McpServer): void {
               };
               addConnection(targetData, mirrorConnection);
               writeMapJson(project.getMapJsonPath(targetMapName), targetData);
-            } catch {
-              // If target map can't be found, skip mirror silently
+              mirrored = true;
+            } catch (mirrorErr) {
+              mirrorWarning = `Mirror connection skipped: ${(mirrorErr as Error).message}`;
             }
           }
         }
 
+        const result: Record<string, unknown> = { success: true, connection, mirrored };
+        if (mirrorWarning) result.mirror_warning = mirrorWarning;
         return {
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify(
-                { success: true, connection, mirrored: shouldMirror },
-                null,
-                2,
-              ),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
