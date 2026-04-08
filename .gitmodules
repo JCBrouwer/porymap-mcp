@@ -1,0 +1,3 @@
+[submodule "porymap"]
+	path = porymap
+	url = https://github.com/huderlem/porymap
