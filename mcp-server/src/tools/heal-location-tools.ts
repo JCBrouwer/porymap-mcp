@@ -19,7 +19,7 @@ export function registerHealLocationTools(server: McpServer): void {
     },
     async ({ map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const filepath = project.resolve(project.paths.json_heal_locations);
         if (!fileExists(filepath)) {
           return {
@@ -71,7 +71,7 @@ export function registerHealLocationTools(server: McpServer): void {
     },
     async ({ id, map, x, y, respawn_map, respawn_npc }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const filepath = project.resolve(project.paths.json_heal_locations);
         if (!fileExists(filepath)) {
           return {
@@ -115,7 +115,7 @@ export function registerHealLocationTools(server: McpServer): void {
     },
     async ({ id }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const filepath = project.resolve(project.paths.json_heal_locations);
         if (!fileExists(filepath)) {
           return {

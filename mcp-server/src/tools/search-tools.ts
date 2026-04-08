@@ -13,7 +13,7 @@ export function registerSearchTools(server: McpServer): void {
     },
     async ({ species }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const data = project.readWildEncounters();
         if (!data) {
           return {
@@ -56,7 +56,7 @@ export function registerSearchTools(server: McpServer): void {
     },
     async ({ event_type, script_pattern, flag, item, graphics_id, limit }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const maps = project.getMapList();
         const maxResults = limit ?? 50;
         const results: Array<{

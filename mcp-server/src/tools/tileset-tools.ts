@@ -14,7 +14,7 @@ export function registerTilesetTools(server: McpServer): void {
     {},
     async () => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const layoutsData = project.readLayouts();
         const layouts = layoutsData.layouts.map((l) => ({
           id: l.id,
@@ -45,7 +45,7 @@ export function registerTilesetTools(server: McpServer): void {
     },
     async ({ layout_id, map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const layoutsData = project.readLayouts();
         let resolvedLayoutId = layout_id;
 
@@ -88,7 +88,7 @@ export function registerTilesetTools(server: McpServer): void {
     },
     async ({ tileset, pattern }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const allLabels = project.getMetatileLabels();
 
         let results;

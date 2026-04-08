@@ -63,7 +63,7 @@ export function registerEventTools(server: McpServer): void {
     },
     async (params) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(params.map);
         let eventIndex: number;
 
@@ -218,7 +218,7 @@ export function registerEventTools(server: McpServer): void {
     },
     async ({ map, event_group, index, updates }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         updateEvent(mapData, event_group, index, updates as Record<string, unknown>);
         writeMapJson(project.getMapJsonPath(map), mapData);
@@ -249,7 +249,7 @@ export function registerEventTools(server: McpServer): void {
     },
     async ({ map, event_group, index }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         removeEvent(mapData, event_group, index);
         writeMapJson(project.getMapJsonPath(map), mapData);

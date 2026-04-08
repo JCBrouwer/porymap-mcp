@@ -53,7 +53,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, music, location, weather, map_type, battle_scene, requires_flash, show_location_name, allow_running, allow_biking, allow_escaping, floor_number }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         const updates: Record<string, unknown> = {};
         if (music !== undefined) updates.music = music;
@@ -92,7 +92,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, blocks }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
         const positioned: PositionedBlock[] = blocks.map((b) => ({
           x: b.x,
@@ -129,7 +129,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, x, y, width, height, metatile_id, collision, elevation }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
         const count = fillMapBlocks(
           project.root,
@@ -167,7 +167,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, width, height, fill_metatile_id, fill_collision, fill_elevation }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout, layoutsData } = project.getLayoutForMap(map);
         const oldWidth = layout.width;
         const oldHeight = layout.height;
@@ -219,8 +219,29 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, x_delta, y_delta, fill_metatile_id }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
+
+        // Validate delta values to prevent entire map replacement
+        if (Math.abs(x_delta) >= layout.width || Math.abs(y_delta) >= layout.height) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: JSON.stringify(
+                  {
+                    success: false,
+                    error: `Delta values too large: x_delta=${x_delta} (map width=${layout.width}), y_delta=${y_delta} (map height=${layout.height}). Delta magnitude must be less than map dimensions.`,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+
         shiftMapBlocks(project.root, layout, x_delta, y_delta, fill_metatile_id ?? 0);
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ success: true, shifted: { x_delta, y_delta } }, null, 2) }],
@@ -243,7 +264,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, blocks }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
         const positioned: PositionedBlock[] = blocks.map((b) => ({
           x: b.x,
@@ -275,7 +296,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async ({ map, primary_tileset, secondary_tileset }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout, layoutsData } = project.getLayoutForMap(map);
         if (primary_tileset) layout.primary_tileset = primary_tileset;
         if (secondary_tileset) layout.secondary_tileset = secondary_tileset;
@@ -329,7 +350,7 @@ export function registerMapWriteTools(server: McpServer): void {
     },
     async (params) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapName = params.name;
         const mapId = mapNameToConstant(mapName);
         const layoutId = layoutNameToConstant(mapName);

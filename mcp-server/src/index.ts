@@ -11,6 +11,7 @@ import { registerEncounterTools } from "./tools/encounter-tools.js";
 import { registerTilesetTools } from "./tools/tileset-tools.js";
 import { registerSearchTools } from "./tools/search-tools.js";
 import { registerHealLocationTools } from "./tools/heal-location-tools.js";
+import { registerMapManagementTools } from "./tools/map-management-tools.js";
 
 const server = new McpServer({
   name: "porymap-mcp",
@@ -27,6 +28,7 @@ registerEncounterTools(server);
 registerTilesetTools(server);
 registerSearchTools(server);
 registerHealLocationTools(server);
+registerMapManagementTools(server);
 
 // Start the server
 async function main() {

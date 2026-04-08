@@ -98,6 +98,60 @@ export function reverseDirection(
   return reverseMap[direction] ?? null;
 }
 
+// Find all connection indices pointing to a specific map constant
+export function findConnectionIndicesTo(
+  data: MapJson,
+  targetMapConstant: string,
+): number[] {
+  const connections = data.connections ?? [];
+  const indices: number[] = [];
+  for (let i = 0; i < connections.length; i++) {
+    if (connections[i].map === targetMapConstant) {
+      indices.push(i);
+    }
+  }
+  return indices;
+}
+
+// Result type for findMapsWithConnectionTo
+export interface IncomingConnection {
+  mapName: string;
+  mapConstant: string;
+  connectionIndex: number;
+  direction: string;
+  offset: number;
+}
+
+// Find all maps with connections pointing to a specific map constant
+export function findMapsWithConnectionTo(
+  project: { getMapList(): Array<{ name: string; group: string }>; readMapJson(name: string): MapJson },
+  targetMapConstant: string,
+): IncomingConnection[] {
+  const results: IncomingConnection[] = [];
+  const maps = project.getMapList();
+
+  for (const mapEntry of maps) {
+    try {
+      const mapData = project.readMapJson(mapEntry.name);
+      const indices = findConnectionIndicesTo(mapData, targetMapConstant);
+      for (const idx of indices) {
+        const conn = mapData.connections![idx];
+        results.push({
+          mapName: mapEntry.name,
+          mapConstant: mapData.id,
+          connectionIndex: idx,
+          direction: conn.direction,
+          offset: conn.offset,
+        });
+      }
+    } catch {
+      // Skip unreadable maps
+    }
+  }
+
+  return results;
+}
+
 // --- Event operations ---
 
 type EventGroup = "object" | "warp" | "coord" | "bg";

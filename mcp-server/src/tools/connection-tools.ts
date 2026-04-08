@@ -28,7 +28,7 @@ export function registerConnectionTools(server: McpServer): void {
     },
     async ({ map, direction, target_map, offset, mirror }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         const connection: ConnectionData = {
           map: target_map,
@@ -95,7 +95,7 @@ export function registerConnectionTools(server: McpServer): void {
     },
     async ({ map, index, direction, target_map, offset }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         const updates: Partial<ConnectionData> = {};
         if (direction !== undefined) updates.direction = direction;
@@ -129,12 +129,114 @@ export function registerConnectionTools(server: McpServer): void {
     },
     async ({ map, index }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         removeConnection(mapData, index);
         writeMapJson(project.getMapJsonPath(map), mapData);
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ success: true, removed_index: index }, null, 2) }],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${(e as Error).message}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "remove_connection_mirror",
+    "Remove the mirror connection from the target map. Given a source map and direction, finds the connection and removes its mirror from the target map.",
+    {
+      map: z.string().describe("Source map name"),
+      direction: z
+        .enum(["up", "down", "left", "right", "dive", "emerge"])
+        .describe("Connection direction"),
+    },
+    async ({ map, direction }) => {
+      try {
+        const project = getProject(server);
+        const mapData = project.readMapJson(map);
+        const connections = mapData.connections ?? [];
+
+        // Find the connection with matching direction
+        let sourceConnection: ConnectionData | null = null;
+        let sourceIndex = -1;
+        for (let i = 0; i < connections.length; i++) {
+          if (connections[i].direction === direction) {
+            sourceConnection = connections[i];
+            sourceIndex = i;
+            break;
+          }
+        }
+
+        if (!sourceConnection) {
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: `No ${direction} connection found on ${map}` }, null, 2) }],
+            isError: true,
+          };
+        }
+
+        const revDir = reverseDirection(direction);
+        if (!revDir) {
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: `Cannot reverse direction: ${direction}` }, null, 2) }],
+            isError: true,
+          };
+        }
+
+        // Remove the mirror from target map
+        let mirrorRemoved = false;
+        let mirrorIndex = -1;
+        try {
+          const targetMapName = project.resolveMapName(sourceConnection.map);
+          const targetData = project.readMapJson(targetMapName);
+          const targetConnections = targetData.connections ?? [];
+
+          // Find mirror connection (points back to source, has reverse direction)
+          for (let i = 0; i < targetConnections.length; i++) {
+            const conn = targetConnections[i];
+            if (conn.map === mapData.id && conn.direction === revDir) {
+              mirrorIndex = i;
+              removeConnection(targetData, i);
+              writeMapJson(project.getMapJsonPath(targetMapName), targetData);
+              mirrorRemoved = true;
+              break;
+            }
+          }
+        } catch (mirrorErr) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: JSON.stringify(
+                  { success: false, error: `Failed to remove mirror: ${(mirrorErr as Error).message}` },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  success: true,
+                  source_connection: { map, direction, target_map: sourceConnection.map, index: sourceIndex },
+                  mirror_removed: mirrorRemoved,
+                  mirror_index: mirrorRemoved ? mirrorIndex : null,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (e) {
         return {

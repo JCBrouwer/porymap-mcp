@@ -25,7 +25,7 @@ export function registerEncounterTools(server: McpServer): void {
     { map: z.string().describe("Map name") },
     async ({ map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const data = project.readWildEncounters();
         if (!data) {
           return {
@@ -87,7 +87,7 @@ export function registerEncounterTools(server: McpServer): void {
     },
     async ({ map, field_type, encounter_rate, mons }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const filepath = project.resolve(project.paths.json_wild_encounters);
         const data = readWildEncounters(filepath);
 
@@ -136,7 +136,7 @@ export function registerEncounterTools(server: McpServer): void {
     },
     async ({ map, field_type }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const filepath = project.resolve(project.paths.json_wild_encounters);
         if (!project.readWildEncounters()) {
           return {
@@ -171,7 +171,7 @@ export function registerEncounterTools(server: McpServer): void {
     {},
     async () => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const data = project.readWildEncounters();
         if (!data) {
           return {

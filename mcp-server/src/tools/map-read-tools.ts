@@ -15,7 +15,7 @@ export function registerMapReadTools(server: McpServer): void {
     { map: z.string().describe("Map name (e.g. 'PetalburgCity')") },
     async ({ map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         const header = getMapHeader(mapData);
         return {
@@ -42,7 +42,7 @@ export function registerMapReadTools(server: McpServer): void {
     },
     async ({ map, x, y, width, height }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
         const rx = x ?? 0;
         const ry = y ?? 0;
@@ -96,7 +96,7 @@ export function registerMapReadTools(server: McpServer): void {
     { map: z.string().describe("Map name") },
     async ({ map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const { layout } = project.getLayoutForMap(map);
         const blocks = readBorderBlocks(project.root, layout);
         return {
@@ -145,7 +145,7 @@ export function registerMapReadTools(server: McpServer): void {
     },
     async ({ map, event_type }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
 
         if (event_type) {
@@ -186,7 +186,7 @@ export function registerMapReadTools(server: McpServer): void {
     { map: z.string().describe("Map name") },
     async ({ map }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const mapData = project.readMapJson(map);
         const connections = getConnections(mapData);
         return {

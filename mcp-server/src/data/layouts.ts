@@ -303,3 +303,13 @@ export function createBlockdata(
 export function addLayout(data: LayoutsJson, layout: Layout): void {
   data.layouts.push(layout);
 }
+
+// Remove a layout from layouts.json by ID
+export function removeLayout(data: LayoutsJson, layoutId: string): boolean {
+  const index = data.layouts.findIndex((l) => l.id === layoutId);
+  if (index === -1) {
+    return false;
+  }
+  data.layouts.splice(index, 1);
+  return true;
+}

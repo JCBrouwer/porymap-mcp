@@ -4,19 +4,32 @@ import { ProjectContext } from "../project.js";
 import type { ConstantType } from "../types.js";
 import { McpError } from "../utils.js";
 
-// Server-level state: the current open project
-let currentProject: ProjectContext | null = null;
+// Server-level state: Map of server instances to their project contexts
+// Each server gets isolated state via a unique symbol
+const serverProjects = new Map<symbol, ProjectContext | null>();
 
-export function getProject(): ProjectContext {
-  if (!currentProject) {
-    throw new McpError("NO_PROJECT", "No project is open. Call open_project first.");
-  }
-  return currentProject;
+function getServerKey(server: McpServer): symbol {
+  // Use the server object identity as the key
+  return Symbol.for(server.toString());
 }
 
-/** For testing only: inject a ProjectContext without going through open_project. */
-export function setProject(project: ProjectContext | null): void {
-  currentProject = project;
+export function getProject(server: McpServer): ProjectContext {
+  const key = getServerKey(server);
+  const project = serverProjects.get(key);
+  if (!project) {
+    throw new McpError("NO_PROJECT", "No project is open. Call open_project first.");
+  }
+  return project;
+}
+
+export function setProject(server: McpServer, project: ProjectContext | null): void {
+  const key = getServerKey(server);
+  serverProjects.set(key, project);
+}
+
+/** For testing only: clear all project state. */
+export function clearAllProjects(): void {
+  serverProjects.clear();
 }
 
 export function registerProjectTools(server: McpServer): void {
@@ -26,8 +39,9 @@ export function registerProjectTools(server: McpServer): void {
     { project_path: z.string().describe("Absolute path to the decompilation project root") },
     async ({ project_path }) => {
       try {
-        currentProject = new ProjectContext(project_path);
-        const info = currentProject.getProjectInfo();
+        const project = new ProjectContext(project_path);
+        setProject(server, project);
+        const info = project.getProjectInfo();
         return {
           content: [
             {
@@ -46,12 +60,38 @@ export function registerProjectTools(server: McpServer): void {
   );
 
   server.tool(
+    "close_project",
+    "Close the currently open project. Call open_project again to work with a different project.",
+    {},
+    async () => {
+      try {
+        const key = getServerKey(server);
+        const wasOpen = serverProjects.get(key) !== undefined;
+        setProject(server, null);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ success: true, was_open: wasOpen }, null, 2),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${(e as Error).message}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
     "get_project_info",
     "Get information about the currently open project.",
     {},
     async () => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         const info = project.getProjectInfo();
         return {
           content: [{ type: "text" as const, text: JSON.stringify(info, null, 2) }],
@@ -73,7 +113,7 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ group }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         let maps = project.getMapList();
         if (group) {
           maps = maps.filter((m) => m.group === group);
@@ -128,7 +168,7 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ type, filter }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         let constants = project.getConstants(type as ConstantType);
         if (filter) {
           const upper = filter.toUpperCase();
@@ -162,7 +202,7 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ type }) => {
       try {
-        const project = getProject();
+        const project = getProject(server);
         let tilesets = project.getTilesets();
         if (type === "primary") {
           tilesets = tilesets.filter((t) => !t.isSecondary);
